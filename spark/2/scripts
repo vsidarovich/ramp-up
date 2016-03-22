@@ -1,0 +1,35 @@
+﻿create 'statistics', 'f1' 
+create 'settings', 'f1' 
+
+("10.0.2.15", 1, 40, 30)
+put 'settings', '10.0.2.15', 'f1:type', '1' 
+put 'settings', '10.0.2.15', 'f1:value', '10000' 
+put 'settings', '10.0.2.15', 'f1:period', '30' 
+put 'settings', '10.0.2.15', 'f1:alerted', 'false' 
+
+
+("178.154.131.217", 2, 40, 30)
+put 'settings', '178.154.131.217', 'f1:type', '2' 
+put 'settings', '178.154.131.217', 'f1:value', '300' 
+put 'settings', '178.154.131.217', 'f1:period', '30' 
+put 'settings', '178.154.131.217', 'f1:alerted', 'false' 
+
+(“8.8.8.8")
+
+("8.8.8.8", 1, 4000, 10)
+put 'settings', '8.8.8.8', 'f1:type', '1' 
+put 'settings', '8.8.8.8', 'f1:value', '1000' 
+put 'settings', '8.8.8.8', 'f1:period', '10' 
+put 'settings', '8.8.8.8', 'f1:alerted', 'false' 
+
+("NULL_1", 1, 4000, 10)
+put 'settings', 'NULL_2', 'f1:type', '1' 
+put 'settings', 'NULL_2', 'f1:value', '4000' 
+put 'settings', 'NULL_2', 'f1:period', '30' 
+
+
+("NULL_2", 1, 4000, 10)
+put 'settings', 'NULL_2', 'f1:type', '2' 
+put 'settings', 'NULL_2', 'f1:value', '4000' 
+put 'settings', 'NULL_2', 'f1:period', '30' 
+

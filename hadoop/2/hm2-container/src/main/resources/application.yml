@@ -1,0 +1,21 @@
+spring:
+    hadoop:
+      fsUri: hdfs://sandbox.hortonworks.com:8020
+      resourceManagerHost: localhost
+      resourceManagerPort: 8050
+    yarn:
+        appName: hm2
+        applicationBaseDir: /app/
+        applicationDir: /app/hm2
+        client:
+            clientClass: org.springframework.yarn.client.DefaultApplicationYarnClient
+            files:
+             - "file:hm2-appmaster-0.1.0.jar"
+            launchcontext:
+                archiveFile: hm2-appmaster-0.1.0.jar
+        appmaster:
+            keepContextAlive: true
+            files:
+             - "file:hm2-container-0.1.0.jar"
+            launchcontext:
+                archiveFile: hm2-container-0.1.0.jar

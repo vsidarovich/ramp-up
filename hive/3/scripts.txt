@@ -1,0 +1,62 @@
+1. 
+create 'plane-data', 'f1'
+
+hbase org.apache.hadoop.hbase.mapreduce.ImportTsv -Dimporttsv.separator=, -Dimporttsv.columns=HBASE_ROW_KEY,f1:type,f1:manufacturer,f1:issue_date, f1:model,f1:status,f1:aircraft_type,f1:engine_type,f1:year plane-data /user/root/airports/planes.csv
+
+CREATE external TABLE hbase_plane_data3(tailnum String, type String, manufacturer String, issue_date String, model String, status String, aircraft_type String, engine_type String, year String) STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler' WITH SERDEPROPERTIES("hbase.columns.mapping" = ":key,f1:type,f1:manufacturer,f1:issue_date,f1:model,f1:status,f1:aircraft_type,f1:engine_type,f1:year") TBLPROPERTIES ("hbase.table.name" = "plane-data");
+
+2.
+
+import org.apache.spark.sql.hive.orc._
+import org.apache.spark.sql._
+
+val hiveContext = new org.apache.spark.sql.hive.HiveContext(sc)
+
+hiveContext.sql("create table user_agent (bid_id String, timestmp String, log_type String, iPinyou_id String, user_agent String, ip String, region String, city String, ad_exchange String, domain String, url String, anonymous_url_id String, ad_slot_id String, ad_slot_width String, ad_slot_height String, ad_slot_visibility String, ad_slot_format String, ad_slot_floor_price String, creative_id String, bidding_price String, paying_price String, key_page_url String, advertiser_id String,  user_tags String) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t' stored as orc")
+
+hadoop fs -put imp.20131019.txt
+val user_agents = sc.textFile("hdfs://sandbox.hortonworks.com:8020/user/root/imp.20131019.txt")
+
+class UserAgents(bidId: String, timstmp: String, logType: String, iPinyouId: String, userAgent: String, ip: String, region: String, city: String, adExchange: String, domain: String, url: String, anonymousUrlId: String, adSlotId: String, adSlotWidth: String, adSlotHeight: String, adSlotVisibility: String, adSlotFormat: String, adSlotFloorPrice: String, creativeId: String, biddingPrice: String, payingPrice: String, keyPageUrl: String,  advertiserId: String,  userTags: String) extends Product {
+  override def productElement(n: Int): Any = n match {
+    case 0 => bidId
+    case 1 => timstmp
+    case 2 => logType
+    case 3 => iPinyouId
+    case 4 => userAgent
+    case 5 => ip
+    case 6 => region
+    case 7 => city
+    case 8 => adExchange
+    case 9 => domain
+    case 10 => url
+    case 11 => anonymousUrlId
+    case 12 => adSlotId
+    case 13 => adSlotWidth
+    case 14 => adSlotHeight
+    case 15 => adSlotVisibility
+    case 16 => adSlotFormat
+    case 17 => adSlotFloorPrice
+    case 18 => creativeId
+    case 19 => biddingPrice
+    case 20 => payingPrice
+    case 21 => keyPageUrl
+    case 22 => advertiserId
+    case 23 => userTags
+    case _ => throw new IndexOutOfBoundsException(n.toString())
+  }
+
+  override def productArity: Int = 24
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[UserAgents]
+}
+
+val parsedAgents = user_agents.map(_.split("\t")).map(
+  row => new UserAgents(row(0), row(1), row(2), row(3), row(4), row(5), row(6), row(7), row(8), row(9), row(10), row(11),
+    row(12), row(13), row(14), row(15), row(16), row(17), row(18), row(19), row(20), row(21), row(22), row(23))).toDF()
+	
+parsedAgents.registerTempTable("user_agents_temp")
+val results = sqlContext.sql("SELECT * FROM user_agents_temp")
+results.saveAsOrcFile("/apps/hive/warehouse/user_agent") 
+
+hiveContext.sql("select * from user_agent limit 5").collect.foreach(println);
+

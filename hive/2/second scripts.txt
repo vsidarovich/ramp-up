@@ -1,0 +1,44 @@
+1. 
+add jar ./csv-serde-1.1.2-0.11.0-all.jar;
+
+create external table flights (Year int, Month int, DayofMonth int, DayOfWeek int, DepTime int, CRSDepTime int, ArrTime int, CRSArrTime int, UniqueCarrier String, FlightNum int, TailNum String, ActualElapsedTime int, CRSElapsedTime int, AirTime int, ArrDelay int, DepDelay int, Origin String, Dest String, Distance int, TaxiIn int, TaxiOut int, Cancelled int, CancellationCode int, Diverted int, CarrierDelay int, WeatherDelay int, NASDelay int, SecurityDelay int, LateAircraftDelay int) ROW FORMAT serde "com.bizo.hive.serde.csv.CSVSerde" LOCATION '/root/airports/';
+
+
+create external table carriers(code STRING, description STRING) ROW FORMAT serde "com.bizo.hive.serde.csv.CSVSerde" LOCATION '/root/airports/';
+
+
+create external table planes(tailnum String, type String, manufacturer String, issue_date String, model String, status String, aircraft_type String, engine_type String, year String) ROW FORMAT serde "com.bizo.hive.serde.csv.CSVSerde" LOCATION '/root/airports/';
+
+
+create table cancelled as 
+
+	select c.description, cancCount, collect_set(a.city) from (select f.uniqueCarrier as uc, count(f.cancelled) as cancCount from flights f where f.cancelled = 1 group by (f.uniqueCarrier) having count(f.cancelled)>1 order by cancCount desc) as cancUc
+	inner join flights fl on cancUc.uc  = fl.uniqueCarrier
+	inner join airports a on fl.origin = a.iata
+	inner join carriers c cancUc.uc = on c.code
+	where fl.cancelled = 1
+	group by c.description, cancCount
+	order by uc;
+
+
+2.
+
+hive --hiveconf hive.root.logger=INFO,console
+
+create external table user_info (bid_id String, timestmp String, log_type String, iPinyou_id String, user_agent String, ip String, region String, city String, ad_exchange String, domain String, url String, anonymous_url_id String, ad_slot_id String, ad_slot_width String, ad_slot_height String, ad_slot_visibility String, ad_slot_format String, ad_slot_floor_price String, creative_id String, bidding_price String, paying_price String, key_page_url String, advertiser_id String,  user_tags String) ROW FORMAT DELIMITED FIELDS TERMINATED BY '\t' LOCATION '/root/ip/';
+
+
+add jar ./bigdata-0.0.1-SNAPSHOT-jar-with-dependencies.jar;
+add jar ./bigdata-0.0.1-SNAPSHOT.jar;
+
+create function process_agent as 'com.epam.bigdata.hive.second.UserAgentFunction';
+
+//temporary table
+CREATE temporary TABLE user_agent AS SELECT ui.browser as browser, ui.os as os, ui.device as device, city as city_id FROM user_info lateral view process_agent(user_agent, 'browser', 'os', 'device') ui as browser, os, device group by city_id, browser, os, device;
+
+//top 5
+select br_rnk.city_id, br_rnk.browser from (select br.*, rank() over(partition by city_id order by cnt desc) as rnk from (select city_id, browser, count(*) as cnt from user_agent group by city_id, browser) as br) as br_rnk where br_rnk .rnk <=5;
+
+select br_rnk.city_id, br_rnk.os from (select br.*, rank() over(partition by city_id order by cnt desc) as rnk from (select city_id, os, count(*) as cnt from user_agent group by city_id, os) as br) as br_rnk where br_rnk.rnk <=5;
+
+select br_rnk.city_id, br_rnk.device from (select br.*, rank() over(partition by city_id order by cnt desc) as rnk from (select city_id, device, count(*) as cnt from user_agent group by city_id, device) as br)as br_rnk where br_rnk.rnk <=5;
